@@ -70,8 +70,8 @@ def review_with_claude(diff: str) -> list:
         "content-type": "application/json",
     }
     payload = {
-        # Check https://docs.claude.com for the latest model names before running this for real.
-        "model": "claude-sonnet-4-5",
+        # Check https://docs.claude.com/en/docs/about-claude/models for the latest model names.
+        "model": "claude-sonnet-5",
         "max_tokens": 2000,
         "system": SYSTEM_PROMPT,
         "messages": [
@@ -80,6 +80,8 @@ def review_with_claude(diff: str) -> list:
     }
 
     response = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=60)
+    if not response.ok:
+        print(f"Anthropic API error {response.status_code}: {response.text}", file=sys.stderr)
     response.raise_for_status()
     data = response.json()
 
