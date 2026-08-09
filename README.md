@@ -1,6 +1,6 @@
 # AI-Assisted Terraform Code Review Bot
 
-A GitHub Actions workflow that sends every Terraform pull request's diff to Claude,
+A GitHub Actions workflow that sends every Terraform pull request's diff to Google Gemini,
 flags security misconfigurations, cost issues, and naming/best-practice violations,
 and posts the findings as a PR comment automatically.
 
@@ -18,7 +18,7 @@ PR opened/updated (touching *.tf files)
         |
 Extract diff (git diff base...head -- *.tf)
         |
-Send diff to Claude with a structured review prompt
+Send diff to Gemini with a structured review prompt
         |
 Parse JSON response: [{file, severity, issue, suggestion}, ...]
         |
@@ -42,9 +42,9 @@ Post as a PR comment via the GitHub REST API
 
 ## Setup
 
-1. Get an API key from [console.anthropic.com](https://console.anthropic.com)
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey) — no credit card required, generous free-tier rate limits.
 2. In your GitHub repo: Settings → Secrets and variables → Actions → New repository secret
-   - Name: `ANTHROPIC_API_KEY`, Value: your key
+   - Name: `GEMINI_API_KEY`, Value: your key
    - (`GITHUB_TOKEN` is provided automatically by GitHub Actions — no setup needed)
 3. Open a PR that touches any `.tf` file — the workflow triggers automatically
 
@@ -63,7 +63,7 @@ of the known, planted issues the bot actually flags, out of the total.
 
 ```bash
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=your_key
+export GEMINI_API_KEY=your_key
 export GITHUB_TOKEN=your_github_token
 export GITHUB_REPOSITORY=your-username/your-repo
 export PR_NUMBER=1

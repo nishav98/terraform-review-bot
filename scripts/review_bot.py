@@ -1,17 +1,17 @@
 """
 review_bot.py
 
-Sends the Terraform diff of a pull request to the Claude API for automated
-review, then posts the findings as inline PR review comments via the
+Sends the Terraform diff of a pull request to the Google Gemini API for
+automated review, then posts the findings as a PR comment via the
 GitHub REST API.
 
 Environment variables expected (set as GitHub Actions secrets/context):
-    ANTHROPIC_API_KEY   - Claude API key
-    GITHUB_TOKEN        - provided automatically by GitHub Actions
-    GITHUB_REPOSITORY   - e.g. "nishav98/terraform-review-bot"
-    PR_NUMBER           - pull request number being reviewed
-    BASE_SHA            - base commit SHA of the PR
-    HEAD_SHA            - head commit SHA of the PR
+    GEMINI_API_KEY       - Google Gemini API key (free tier, no card required)
+    GITHUB_TOKEN         - provided automatically by GitHub Actions
+    GITHUB_REPOSITORY    - e.g. "nishav98/terraform-review-bot"
+    PR_NUMBER            - pull request number being reviewed
+    BASE_SHA             - base commit SHA of the PR
+    HEAD_SHA             - head commit SHA of the PR
 """
 
 import json
@@ -21,14 +21,16 @@ import sys
 
 import requests
 
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 GITHUB_REPOSITORY = os.environ["GITHUB_REPOSITORY"]
 PR_NUMBER = os.environ["PR_NUMBER"]
 BASE_SHA = os.environ["BASE_SHA"]
 HEAD_SHA = os.environ["HEAD_SHA"]
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+# Check https://ai.google.dev/gemini-api/docs/models for the latest free-tier model names.
+GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPOSITORY}"
 
 SYSTEM_PROMPT = """You are an expert Terraform code reviewer specializing in AWS infrastructure.
@@ -59,33 +61,35 @@ def get_diff() -> str:
     return result.stdout
 
 
-def review_with_claude(diff: str) -> list:
+def review_with_gemini(diff: str) -> list:
     if not diff.strip():
         print("No .tf file changes in this PR, skipping review.")
         return []
 
-    headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
+    headers = {"content-type": "application/json"}
     payload = {
-        # Check https://docs.claude.com/en/docs/about-claude/models for the latest model names.
-        "model": "claude-sonnet-5",
-        "max_tokens": 2000,
-        "system": SYSTEM_PROMPT,
-        "messages": [
-            {"role": "user", "content": f"Review this Terraform diff:\n\n{diff}"}
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [
+            {"parts": [{"text": f"Review this Terraform diff:\n\n{diff}"}]}
         ],
+        "generationConfig": {"maxOutputTokens": 2000},
     }
 
-    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=60)
+    response = requests.post(
+        f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+        headers=headers,
+        json=payload,
+        timeout=60,
+    )
     if not response.ok:
-        print(f"Anthropic API error {response.status_code}: {response.text}", file=sys.stderr)
+        print(f"Gemini API error {response.status_code}: {response.text}", file=sys.stderr)
     response.raise_for_status()
     data = response.json()
 
-    text = "".join(block["text"] for block in data["content"] if block["type"] == "text")
+    text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+    # Gemini sometimes wraps JSON in markdown fences despite instructions not to; strip them.
+    text = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
 
     try:
         findings = json.loads(text)
@@ -126,7 +130,7 @@ def post_summary_comment(findings: list):
 
 def main():
     diff = get_diff()
-    findings = review_with_claude(diff)
+    findings = review_with_gemini(diff)
     post_summary_comment(findings)
 
 
