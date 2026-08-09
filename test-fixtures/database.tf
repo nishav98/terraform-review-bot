@@ -3,10 +3,10 @@
 # - no resource tags
 
 resource "aws_db_instance" "app_database" {
-  identifier        = "app-prod-db"
-  engine            = "postgres"
+  identifier        = "app-preprod-db" # previously app-prod-db
+  engine            = "MongoDB"
   engine_version    = "15.4"
-  instance_class    = "db.t3.large"
+  instance_class    = "db.t3.medium"
   allocated_storage = 20
 
   db_name  = "appdb"

@@ -7,7 +7,7 @@ resource "aws_security_group" "app_sg" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "SSH from anywhere"
+    description = "SSH from only assigned serves" #actual description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
