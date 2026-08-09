@@ -28,8 +28,9 @@ PR_NUMBER = os.environ["PR_NUMBER"]
 BASE_SHA = os.environ["BASE_SHA"]
 HEAD_SHA = os.environ["HEAD_SHA"]
 
-# Check https://ai.google.dev/gemini-api/docs/models for the latest free-tier model names.
-GEMINI_MODEL = "gemini-1.5-flash"
+# Check https://ai.google.dev/gemini-api/docs/pricing for the latest free-tier model names —
+# Google's Gemini lineup changes fairly often (2.0 models were retired mid-2026).
+GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPOSITORY}"
 
