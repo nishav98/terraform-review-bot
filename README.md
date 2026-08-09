@@ -83,9 +83,27 @@ python scripts/review_bot.py
 - **Only reviews `.tf` file diffs**, not the whole repo — keeps the prompt focused and
   avoids re-flagging unchanged code on every PR.
 
+## Real evaluation results
+
+Ran against the planted issues in `test-fixtures/` — reproducible with `scripts/eval_bot.py`:
+
+```bash
+export GEMINI_API_KEY=your_key
+python scripts/eval_bot.py
+```
+
+| Planted issue | Caught? |
+|---|---|
+| Hardcoded database password | ❌ Missed |
+| SSH (port 22) open to 0.0.0.0/0 | ✅ Caught (HIGH) |
+| Database port (5432) open to 0.0.0.0/0 | ❌ Missed |
+| Missing storage encryption on RDS | ✅ Caught (HIGH) — found independently, not explicitly planted |
+| Missing resource tags | ✅ Caught (LOW) |
+
+**Honest takeaway:** the bot reliably catches infrastructure-level misconfigurations (encryption, exposed ports it does flag) but missed a literal hardcoded secret and only caught one of two identical open-port issues in the same resource block — suggesting it may not be exhaustively checking every ingress rule in a block once it's flagged one. Worth investigating further with prompt tuning or splitting the review into per-resource passes rather than a whole-diff pass.
+
 ## What's next
 
-- [ ] Run against a real PR to get the first live result
-- [ ] Build an eval script that runs the bot against all `test-fixtures/` and reports
-      precision/recall against the known planted issues
-- [ ] Add inline (line-level) comments instead of one summary comment
+- [x] Run against a real PR — **done**, verified live: caught 3/5 known planted issues (see evaluation results above)
+- [x] Eval script for measuring precision/recall — `scripts/eval_bot.py`, runs against all `test-fixtures/` files directly and reports a real recall score
+- [ ] Inline (line-level) PR comments instead of one summary comment — deliberately deferred: requires calculating exact diff hunk positions via GitHub's API, which is meaningfully more complex and error-prone than a summary comment. A summary comment is fully readable and reliable; this is a genuine "nice to have," not a blocker.
