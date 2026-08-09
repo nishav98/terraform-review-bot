@@ -6,7 +6,7 @@ resource "aws_db_instance" "app_database" {
   identifier        = "app-prod-db"
   engine            = "postgres"
   engine_version    = "15.4"
-  instance_class    = "db.t3.medium"
+  instance_class    = "db.t3.large"
   allocated_storage = 20
 
   db_name  = "appdb"
