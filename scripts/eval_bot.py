@@ -60,29 +60,44 @@ KNOWN_ISSUES = {
 }
 
 
-def review_file(path: str) -> list:
-    with open(path) as f:
-        content = f.read()
-
+def _call_gemini(content: str) -> str:
     headers = {"content-type": "application/json"}
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"parts": [{"text": f"Review this Terraform file:\n\n{content}"}]}],
+        "contents": [{"parts": [{"text": content}]}],
         "generationConfig": {"maxOutputTokens": 2000},
     }
-
     response = requests.post(
         f"{GEMINI_API_URL}?key={GEMINI_API_KEY}", headers=headers, json=payload, timeout=60
     )
     response.raise_for_status()
     data = response.json()
     text = data["candidates"][0]["content"]["parts"][0]["text"]
-    text = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    return text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+
+
+def review_file(path: str) -> list:
+    with open(path) as f:
+        content = f.read()
+
+    prompt = f"Review this Terraform file:\n\n{content}"
+    text = _call_gemini(prompt)
 
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        print(f"Warning: could not parse response for {path}", file=sys.stderr)
+        print(f"   First response for {path} wasn't valid JSON, retrying...", file=sys.stderr)
+
+    retry_prompt = (
+        prompt
+        + "\n\nIMPORTANT: your previous response was not valid JSON. "
+        + "Respond with ONLY a raw JSON array — no markdown fences, no commentary, no explanation."
+    )
+    text = _call_gemini(retry_prompt)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        print(f"Warning: retry also failed to parse response for {path}", file=sys.stderr)
         return []
 
 
