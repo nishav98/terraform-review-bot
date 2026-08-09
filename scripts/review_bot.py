@@ -29,7 +29,7 @@ BASE_SHA = os.environ["BASE_SHA"]
 HEAD_SHA = os.environ["HEAD_SHA"]
 
 # Check https://ai.google.dev/gemini-api/docs/models for the latest free-tier model names.
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-1.5-flash"
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPOSITORY}"
 
