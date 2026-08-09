@@ -96,7 +96,10 @@ def call_gemini(user_content: str) -> list:
     stricter reminder if the first response isn't valid JSON, instead of
     silently giving up (this is what caused the storage.tf failure in eval
     testing — see README)."""
-    headers = {"content-type": "application/json"}
+    headers = {
+        "content-type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,  # header, not URL param — keeps it out of error/log URLs
+    }
 
     def _call(content: str) -> str:
         payload = {
@@ -104,9 +107,7 @@ def call_gemini(user_content: str) -> list:
             "contents": [{"parts": [{"text": content}]}],
             "generationConfig": {"maxOutputTokens": 2000},
         }
-        response = requests.post(
-            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}", headers=headers, json=payload, timeout=60
-        )
+        response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=60)
         if not response.ok:
             print(f"Gemini API error {response.status_code}: {response.text}", file=sys.stderr)
         response.raise_for_status()
