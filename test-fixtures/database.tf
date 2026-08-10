@@ -7,7 +7,7 @@ resource "aws_db_instance" "app_database" {
   engine            = "MongoDB"
   engine_version    = "15.4"
   instance_class    = "db.t3.medium"
-  allocated_storage = 20  # test inline comments Save the file.
+  allocated_storage = 20  # test inline comments Save the file
 
   db_name  = "appdb"
   username = "admin"
