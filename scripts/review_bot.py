@@ -105,7 +105,10 @@ def call_gemini(user_content: str) -> list:
         payload = {
             "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
             "contents": [{"parts": [{"text": content}]}],
-            "generationConfig": {"maxOutputTokens": 2000},
+            # Full-file context across multiple files means more findings than a
+            # diff-only review, so this needs headroom or Gemini's response gets
+            # truncated mid-JSON (a real bug found in live testing — see README).
+            "generationConfig": {"maxOutputTokens": 8000},
         }
         response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=60)
         if not response.ok:
